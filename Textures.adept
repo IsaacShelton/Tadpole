@@ -1,0 +1,50 @@
+
+import 'main.adept'
+
+struct Textures (
+    grass,
+    house,
+    player,
+    door,
+    tadpole,
+    frog,
+    snowball,
+    snowman,
+    ant,
+    butterfly,
+    abyss,
+    arrow,
+    font,
+    abyss_grey,
+    inventory,
+    inventory_selection,
+    inventory_slot CaptTexture
+) {
+    func load(assetsFolder String) {
+        reflection *AnyStructType = typeinfo Textures as *AnyStructType
+        repeat reflection.length {
+            target *CaptTexture = this as *CaptTexture + reflection.offsets[idx] as ptr
+            *target = captTexture(assetsFolder + stringConstant(reflection.member_names[idx]) + ".png", false)
+        }
+    }
+    
+    func destroy {
+        reflection *AnyStructType = typeinfo Textures as *AnyStructType
+        repeat reflection.length {
+            target *CaptTexture = this as *CaptTexture + reflection.offsets[idx] as ptr
+            target.destroy()
+        }
+    }
+    
+    func randomPetTexture CaptTexture {
+        switch rand() % 6 {
+        case 0, return this.tadpole
+        case 1, return this.frog
+        case 2, return this.snowball
+        case 3, return this.snowman
+        case 4, return this.ant
+        case 5, return this.butterfly
+        }
+        return this.tadpole
+    }
+}

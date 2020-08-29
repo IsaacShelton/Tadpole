@@ -1,0 +1,23 @@
+
+import 'main.adept'
+
+struct Label (has bool, text Text) {
+    func set(string String) {
+        this.clear()
+        this.text = text(string)
+        this.has = true
+    }
+    
+    func draw(x, y float) {
+        if this.has, this.text.draw(x, y)
+    }
+    
+    func clear {
+        this.__defer__()
+        this.has = false
+    }
+    
+    func __defer__ {
+        if this.has, this.text.destroy()
+    }
+}

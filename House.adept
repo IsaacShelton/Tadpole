@@ -1,0 +1,40 @@
+
+import 'main.adept'
+
+func house(id int, x, y float) House {
+    h POD House
+    h.id = id
+    h.x = x
+    h.y = y
+    return h
+}
+
+struct House (id int, x, y float) {
+    func update {
+        if this.getAABB().intersecting(gamedata.player.getAABB()) {
+            next_scene int = gamedata.scene_id + 1 > 2 ? 1 : gamedata.scene_id + 1
+            if random() < 0.5 {
+                gamedata.gotoScene(0)
+                gamedata.return_from_battle = next_scene
+            } else {
+                gamedata.gotoScene(next_scene)
+            }
+        }
+    }
+    
+    func getAABB AABB {
+        return AABB(this.x, this.y, 32.0f, 32.0f)
+    }
+    
+    func draw {
+        captDrawTexture(textures.house, this.x, this.y, 32.0f, 32.0f)
+    }
+    
+    func distanceToPlayer float {
+        return distance(this.x, this.y, gamedata.player.x, gamedata.player.y)
+    }
+}
+
+func add(this *<House> List, x, y float) {
+    this.add(house(this.length, x, y))
+}

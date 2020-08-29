@@ -1,0 +1,87 @@
+
+import 'main.adept'
+
+struct SaveDialog (shown bool, position, count int, load_mode bool, exists 8 bool, title, info Label, icons <CaptTexture> List) {
+    func init {
+        this.shown = false
+        this.position = 0
+        this.count = 8
+        this.load_mode = false
+        repeat this.count, this.exists[idx] = false
+        this.title.set("Savegames......................")
+        this.info.clear()
+        this.icons.clear()
+        this.icons.add(textures.tadpole)
+        this.icons.add(textures.frog)
+        this.icons.add(textures.snowball)
+        this.icons.add(textures.snowman)
+        this.icons.add(textures.ant)
+        this.icons.add(textures.butterfly)
+        this.icons.add(textures.tadpole)
+        this.icons.add(textures.frog)
+    }
+    
+    func lookForSaves {
+        repeat this.count {
+            this.exists[idx] = fileExists("savegame_%.sav" % (idx + 1) as int)
+        }
+    }
+    
+    func toggle {
+        this.shown = !this.shown
+        if this.shown {
+            this.lookForSaves()
+            this.updateLabel()
+        }
+        this.load_mode = false
+    }
+    
+    func updateLabel {
+        status String = this.exists[this.position] ? "Occupied" : "Empty"
+        this.info.set("% Slot %\n" % (this.load_mode ? "Load from" : "Save in") % (this.position + 1) + status)
+    }
+    
+    func keyPress(key int) {
+        if key == GLFW_KEY_UP,    this.load_mode = false
+        if key == GLFW_KEY_DOWN,  this.load_mode = true
+        if key == GLFW_KEY_RIGHT, if ++this.position == this.count, this.position = 0
+        if key == GLFW_KEY_LEFT,  if this.position-- == 0, this.position = this.count - 1
+        this.updateLabel()
+        
+        if key == GLFW_KEY_SPACE {
+            if this.load_mode {
+                if loadgame(this.position + 1), this.shown = false
+            } else if savegame(this.position + 1) {
+                this.shown = false
+                gamedata.inventory_lock = true
+            }
+        }
+    }
+    
+    func draw {
+        dialog_x float = 64.0f
+        dialog_y float = 64.0f
+        drawTiled(textures.inventory, dialog_x, dialog_y, 32.0f, 32.0f, 512.0f, 352.0f)
+        
+        repeat this.count {
+            texture CaptTexture = this.position == idx as int && !this.load_mode ? textures.inventory_selection : textures.inventory_slot
+            x_offset float = 64.0f + 48.0f * idx as float
+            y_offset float = 64.0f + cast float !(this.position == idx as int && false) * 48.0f
+            captDrawTexture(texture, dialog_x + x_offset, dialog_y + y_offset, 40.0f, 40.0f)
+        }
+        
+        repeat this.count {
+            texture CaptTexture = this.position == idx as int && this.load_mode ? textures.inventory_selection : textures.inventory_slot
+            x_offset float = 64.0f + 48.0f * idx as float
+            y_offset float = 64.0f + 2.0f * 48.0f
+            captDrawTexture(texture, dialog_x + x_offset, dialog_y + y_offset, 40.0f, 40.0f)
+            
+            if this.exists[idx] {
+                captDrawTexture(this.icons.get(idx), dialog_x + x_offset + 4.0f, dialog_y + y_offset + 4.0f, 32.0f, 32.0f)
+            }
+        }
+        
+        this.title.draw(64.0f + 64.0f, 64.0f + 80.0f)
+        this.info.draw(64.0f + 64.0f, 320.0f)
+    }
+}

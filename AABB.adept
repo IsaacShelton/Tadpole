@@ -1,0 +1,3 @@
+
+import '2.3/AABB.adept'
+alias AABB = <float> AABB

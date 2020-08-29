@@ -1,0 +1,93 @@
+
+import 'main.adept'
+
+func randomPet() Pet {
+    return pet(textures.randomPetTexture())
+}
+
+func pet(texture CaptTexture) Pet {
+    pet POD Pet
+    pet.texture = texture
+    pet.max_health = randomInt(4, 15)
+    pet.health = pet.max_health
+    pet.level = 1
+    pet.xp = 0
+    return pet
+}
+
+func petFromLine(line String) Pet {
+    pet POD Pet
+    info *ubyte = line.cstr()
+    defer delete info
+    
+    // Lazy count until space or termination
+    i usize = 0; while info[i] != 0x00ub && info[i] != ' 'ub, i++
+    
+    if line.length >= 512 || i >= 256 {
+        print("petFromLine(): invalid pet: too long")
+        return pet
+    }
+    
+    // Read data from line    
+    sscanf(info, '%s %d %d %d %d', def name 256 ubyte, &pet.max_health, &pet.health, &pet.level, &pet.xp)
+    
+    reflection *AnyStructType = typeinfo Textures as *AnyStructType
+    repeat reflection.length, if strcmp(cast *ubyte &name, reflection.member_names[idx]) == 0 {
+        pet.texture = *cast *CaptTexture (&textures as *CaptTexture + reflection.offsets[idx] as ptr)
+        return pet
+    }
+    
+    print("petFromLine(): invalid pet: no name")
+    return pet
+}
+
+struct Pet (texture CaptTexture, health, max_health, level, xp int) {
+    func getName String {
+        return "% LVL %" % this.getPlainName() % this.level
+    }
+    
+    func getPlainName String {
+        reflection *AnyStructType = typeinfo Textures as *AnyStructType
+        repeat reflection.length {
+            if this.texture.id == cast *CaptTexture(&textures as *CaptTexture + reflection.offsets[idx] as ptr).id,
+                return stringConstant(reflection.member_names[idx])
+        }
+        return "unknown"
+    }
+    
+    func isDead bool {
+        return this.health <= 0
+    }
+    
+    func giveXp(amount int) {
+        this.xp += amount
+        while this.xp >= this.level * this.level {
+            this.xp -= this.level * this.level
+            this.level++
+        }
+    }
+    
+    func getHealthBar String {
+        return this.isDead() ? "-" * this.max_health : "/" * this.health + "-" * max(this.max_health - this.health, 0)
+    }
+    
+    func getXpBar String {
+        filled int = this.getXpFilled()
+        return "~" * filled + "." * (10 - filled)
+    }
+    
+    func getXpFilled int {
+        total int = this.level * this.level
+        current int = this.xp
+        percentage double = current as double / total as double
+        return cast int (percentage * 10)
+    }
+    
+    func draw(position Position) {
+        captDrawTexture(this.texture, position.x, position.y, 32.0f, 32.0f)
+    }
+    
+    func toLine() String {
+        return "% % % % %" % this.getPlainName() % this.max_health % this.health % this.level % this.xp
+    }
+}

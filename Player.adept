@@ -1,0 +1,65 @@
+
+import 'main.adept'
+
+func position(x, y float) Position {
+    ppos POD Position
+    ppos.x = x
+    ppos.y = y
+    return ppos
+}
+
+struct Position (x, y float)
+
+struct Player (x, y float, history <Position> List) {
+    func init {
+        this.init(0.0f, 0.0f)
+    }
+    
+    func init(x, y float) {
+        this.x = x
+        this.y = y
+        this.history.clear()
+    }
+    
+    func update {
+        original_x float = this.x
+        original_y float = this.y
+        
+        if captKeyHeld(GLFW_KEY_UP),    this.y -= 2.0f
+        if captKeyHeld(GLFW_KEY_DOWN),  this.y += 2.0f
+        if captKeyHeld(GLFW_KEY_LEFT),  this.x -= 2.0f
+        if captKeyHeld(GLFW_KEY_RIGHT), this.x += 2.0f
+        this.x = clamp(this.x, 0.0f, 608.0f)
+        this.y = clamp(this.y, 0.0f, 448.0f)
+        
+        moved bool = this.x != original_x || this.y != original_y
+        
+        // Pad to 256
+        while this.history.length < 256, this.history.add(position(this.x, this.y))
+        
+        if moved {
+            this.history.remove(0)
+            this.history.add(position(this.x, this.y))
+        }
+    }
+    
+    func getPetPosition(index int) Position {
+        return this.getHistory(256 - (index + 1) * 16)
+    }
+    
+    func getHistory(index int) Position {
+        if index >= this.history.length {
+            if this.history.length == 0, return position(this.x, this.y)
+            else return this.history.get(this.history.length - 1)
+        }
+        return this.history.get(index)
+    }
+    
+    func getAABB AABB {
+        return AABB(this.x, this.y, 32.0f, 32.0f)
+    }
+    
+    func draw {
+        captDrawTexture(textures.player, this.x, this.y, 32.0f, 32.0f)
+    }
+}

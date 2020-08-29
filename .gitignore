@@ -1,0 +1,5 @@
+*.sav
+tadpole
+*.o
+*.DS_Store
+assets/raw

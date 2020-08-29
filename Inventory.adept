@@ -1,0 +1,153 @@
+
+import 'main.adept'
+
+struct MaybePet (struct Pet, has bool)
+
+struct Inventory (shown bool, position, count int, moving, lock bool, pets 8 MaybePet, info Label) {
+    func init {
+        this.shown = false
+        this.position = 0
+        this.count = 8
+        this.moving = false
+        this.lock = true
+        this.info.clear()
+    }
+    
+    func update {
+        original_position int = this.position
+        
+        if captKeyHeld(GLFW_KEY_LEFT) {
+            unless this.lock {
+                this.position = this.position == 0 ? this.count - 1 : this.position - 1
+                this.lock = true
+                
+                if this.moving, this.swapPets(original_position, this.position)
+            }
+        } else if captKeyHeld(GLFW_KEY_RIGHT) {
+            unless this.lock {
+                this.position = this.position == this.count - 1 ? 0 : this.position + 1
+                this.lock = true
+                
+                if this.moving, this.swapPets(original_position, this.position)
+            }
+        } else if captKeyHeld(GLFW_KEY_UP) {
+            unless this.lock {
+                this.moving = true
+                this.lock = true
+            }
+        } else if captKeyHeld(GLFW_KEY_DOWN) {
+            unless this.lock {
+                if !this.moving && this.getTotalPets() > 1, this.pets[this.position].has = false
+                
+                this.moving = false
+                this.lock = true
+            }
+        } else {
+            this.lock = false
+        }
+        
+        if this.pets[this.position].has {
+            pet *Pet = cast *Pet &this.pets[this.position]
+            this.info.set(pet.getName() + "\n" + pet.getHealthBar() + "\n" + pet.getXpBar())
+        } else {
+            this.info.set("")
+        }
+    }
+    
+    func addPetInBucket(pet POD Pet, bucket int) successful {
+        if this.pets[bucket].has, return false
+        *cast *Pet &this.pets[bucket] = pet
+        this.pets[bucket].has = true
+        return true
+    }
+    
+    func removePetInBucket(bucket int) {
+        this.pets[bucket].has = false
+    }
+    
+    func getPetInBucket(bucket int) MaybePet {
+        return this.pets[bucket]
+    }
+    
+    func addPet(pet POD Pet) successful {
+        repeat this.count {
+            unless this.pets[idx].has {
+                *cast *Pet &this.pets[idx] = pet
+                this.pets[idx].has = true
+                return true
+            }
+        }
+        return false
+    }
+    
+    func removePet(index int) {
+        counted int = 0
+        repeat this.count {
+            if this.pets[idx].has {
+                if counted == index, this.pets[idx].has = false; return
+                counted++
+            }
+        }
+    }
+    
+    func getPet(index int) Pet {
+        return *this.getPetPointer(index)
+    }
+    
+    func getPetPointer(index int) *Pet {
+        counted int = 0
+        repeat this.count {
+            if this.pets[idx].has {
+                if counted == index, return cast *Pet &this.pets[idx]
+                counted++
+            }
+        }
+        print("ERROR: Inventory.getPet() got bad index, giving first bucket")
+        return cast *Pet &this.pets[0]
+    }
+    
+    func getTotalPets int {
+        amount int = 0
+        repeat this.count, if this.pets[idx].has, amount++
+        return amount
+    }
+    
+    func swapPets(index1, index2 int) {
+        tmp POD MaybePet = POD this.pets[index1]
+        this.pets[index1] = POD this.pets[index2]
+        this.pets[index2] = POD tmp
+    }
+    
+    func clear {
+        repeat this.count, this.pets[idx].has = false
+    }
+    
+    func draw {
+        inventory_x float = 64.0f
+        inventory_y float = 64.0f
+        drawTiled(textures.inventory, inventory_x, inventory_y, 32.0f, 32.0f, 512.0f, 352.0f)
+
+        //captDrawTexture(textures.inventory_selection, inventory_x + 64.0f, inventory_y + 64.0f, 40.0f, 40.0f)
+        
+        //repeat 8,
+        //    captDrawTexture(textures.inventory_slot, inventory_x + 64.0f + 48.0f * idx as float, inventory_y + 64.0f, 40.0f, 40.0f)
+        
+        repeat this.count {
+            texture CaptTexture = this.position == idx as int ? textures.inventory_selection : textures.inventory_slot
+            x_offset float = 64.0f + 48.0f * idx as float
+            y_offset float = 64.0f + cast float !(this.position == idx as int && this.moving) * 48.0f
+            captDrawTexture(texture, inventory_x + x_offset, inventory_y + y_offset, 40.0f, 40.0f)
+            
+            if this.pets[idx].has {
+                captDrawTexture(this.pets[idx].texture, inventory_x + x_offset + 4.0f, inventory_y + y_offset + 4.0f, 32.0f, 32.0f)
+            }
+        }
+        
+        this.info.draw(64.0f + 64.0f, 256.0f)
+    }
+    
+    func toggle {
+        this.shown = !this.shown
+        if this.shown, this.moving = false
+    }
+}

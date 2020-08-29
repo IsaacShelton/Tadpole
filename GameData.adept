@@ -1,0 +1,95 @@
+
+import 'main.adept'
+
+enum Background (GRASS, ABYSS, ABYSS_GREY)
+enum SceneKind (OVERWORLD, BATTLE)
+
+struct GameData (
+    scene_id int,
+    scene_kind SceneKind,
+    background Background,
+    player Player,
+    houses <House> List,
+    enemy Pet,
+    friendly_pet_label Label,
+    enemy_pet_label Label,
+    select int,
+    select_lock bool,
+    move_labels 4 Label,
+    reset_time double,
+    selected_a_move bool,
+    return_from_battle int,
+    return_from_room int,
+    inventory Inventory,
+    inventory_lock bool,
+    save_dialog SaveDialog
+) {
+    func init {
+        this.scene_id = 0
+        this.background = Background::GRASS
+        this.player.init()
+        this.gotoScene(1)
+        //this.enemy
+        this.friendly_pet_label.clear()
+        repeat 4, this.move_labels[idx].clear()
+        this.select = 0
+        this.select_lock = true
+        this.reset_time = glfwGetTime()
+        this.selected_a_move = false
+        this.return_from_battle = 0
+        this.return_from_room = 0
+        this.inventory.init()
+        this.inventory.addPet(pet(textures.tadpole))
+        this.inventory_lock = true
+        this.save_dialog.init()
+    }
+    
+    func gotoScene(id int){
+        this.houses.clear()
+        
+        switch id {
+        case 0
+            this.return_from_battle = this.scene_id
+            this.scene_kind = SceneKind::BATTLE
+            this.background = Background::ABYSS_GREY
+            this.select = 0
+            this.select_lock = true
+            this.enemy = randomPet()
+        case 1
+            this.scene_kind = SceneKind::OVERWORLD
+            this.background = Background::GRASS
+            this.inventory_lock = true
+            //this.houses.add(384.0f, 160.0f)
+            //this.houses.add(160.0f, 224.0f)
+            //this.houses.add(384.0f, 352.0f)
+            randomHouses()
+        case 2
+            this.scene_kind = SceneKind::OVERWORLD
+            this.background = Background::GRASS
+            this.inventory_lock = true
+            //this.houses.add(160.0f, 352.0f)
+            //this.houses.add(384.0f, 224.0f)
+            randomHouses()
+        }
+        
+        this.scene_id = id
+    }
+}
+
+func randomHouses {
+    repeat randomInt(1, 10) {
+        valid successful = false
+        x, y float = undef
+        
+        until valid {
+            valid = true
+            x = 32.0f + 32.0f * randomInt(18) as float
+            y = 32.0f + 32.0f * randomInt(13) as float
+            
+            each House in gamedata.houses, if it.x == x && it.y == y, valid = false; break
+            valid = valid && distance(x, y, gamedata.player.x, gamedata.player.y) > 32.0f
+        }
+        
+        gamedata.houses.add(x, y)
+    }
+}

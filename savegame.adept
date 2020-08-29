@@ -1,0 +1,50 @@
+
+import 'main.adept'
+
+func savegame(savefile_index int) successful {
+    filename String = "savegame_%.sav" % savefile_index
+    filename_cstr *ubyte = filename.cstr()
+    defer delete filename_cstr
+    
+    pet_count int = gamedata.inventory.getTotalPets()
+    
+    f *FILE = fopen(filename_cstr, 'w')
+    unless f, return false
+    
+    fprintf(f, '%f %f\n', gamedata.player.x as double, gamedata.player.y as double)
+    
+    repeat pet_count {
+        representation String = gamedata.inventory.getPetPointer(idx).toLine()
+        cstr *ubyte = representation.cstr()
+        defer delete cstr
+        
+        fprintf(f, '%s\n', cstr)
+    }
+    
+    fclose(f)
+    return true
+}
+
+func loadgame(savefile_index int) successful {
+    filename String = "savegame_%.sav" % savefile_index
+    filename_cstr *ubyte = filename.cstr()
+    defer delete filename_cstr
+    
+    gamedata.inventory.clear()
+    
+    f *FILE = fopen(filename_cstr, 'r')
+    unless f, return false
+    
+    buffer 256 ubyte = undef
+    fscanf(f, '%f %f\n', def x_pos float, def y_pos float)
+    
+    while fgets(&buffer as *ubyte, 256, f) {
+        if strlen(&buffer as *ubyte) == 0, continue
+        gamedata.inventory.addPet(petFromLine(stringConstant(&buffer as *ubyte)))
+    }
+    
+    fclose(f)
+    gamedata.player.init(x_pos, y_pos)
+    gamedata.gotoScene(1)
+    return true
+}

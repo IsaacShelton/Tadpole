@@ -1,0 +1,40 @@
+
+import 'main.adept'
+
+func drawTiled(texture CaptTexture, x, y, w, h, total_w, total_h float) {
+    current_y float = y
+    
+    while current_y < y + total_h {
+        current_x float = x
+        while current_x < x + total_w {
+            captDrawTexture(texture, current_x, current_y, w, h)
+            current_x += w
+        }
+        current_y += h
+    }
+}
+
+func clamp(value, min, max $T~__primitive__) $T {
+    if value < min, return min
+    if value > max, return max
+    return value
+}
+
+func distance(x1, y1, x2, y2 float) float {
+    x_diff float = x1 - x2
+    y_diff float = y1 - y2
+    return sqrtf(x_diff * x_diff + y_diff * y_diff)
+}
+
+func fileExists(filename *ubyte) bool {
+    f *FILE = fopen(filename, 'r')
+    if f == null, return false
+    fclose(f)
+    return true
+}
+
+func fileExists(filename String) bool {
+    filename_cstr *ubyte = filename.cstr()
+    defer delete filename_cstr
+    return fileExists(filename_cstr)
+}
